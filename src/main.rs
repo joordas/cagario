@@ -13,7 +13,7 @@ use bevy_rapier3d::{
 pub const HEIGHT: f32 = 720.0;
 pub const WIDTH: f32 = 1280.0;
 
-pub const FIELD_SIZE: f32 = 100.0;
+pub const FIELD_SIZE: f32 = 200.0;
 
 mod main_menu;
 mod player;
@@ -138,7 +138,7 @@ fn setup(mut commands: Commands, player_query: Query<&Transform, With<Player>>, 
             });
         })
         .insert(FollowCamera {
-                distance: 60.0,
+                distance: 30.0,
                 height: 30.0,
                 speed: 1.0,
             })
@@ -167,7 +167,7 @@ fn update_camera(
 
                  let t = (time.delta_seconds() * follow_camera.speed).min(1.0); // adjust the speed of the transition using the `follow_camera.speed` value
             transform.translation = transform.translation.lerp(camera_pos, t);
-            // transform.look_at(player_pos, Vec3::Y);
+            transform.look_at(player_pos, Vec3::Y);
         // }
     }
 }

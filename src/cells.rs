@@ -67,10 +67,6 @@ fn spawn_spheres(
             .insert(Name::new("Cell"))
             .insert(NpcCell)
             .insert(Cell { size })
-            .insert(PhysicsBundle::moving_entity(Vec3::new(
-                size / 2.0,
-                size / 2.0,
-                size / 2.0,
-            )));
+            .insert(PhysicsBundle::moving_entity(Vec3::new(size, size, size)));
     }
 }

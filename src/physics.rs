@@ -47,7 +47,7 @@ fn player_collision_detection(
         for (player_entity, mut _player, mut player_cell) in player_query.iter_mut() {
             if colliding_entities.contains(player_entity) {
                 if player_cell.size > cell.size {
-                    player_cell.size += cell.size;
+                    player_cell.size += cell.size / 2.0;
                     commands.entity(cell_entity).despawn_recursive();
                 }
             }
