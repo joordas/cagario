@@ -1030,6 +1030,7 @@ dependencies = [
  "rand",
  "simula_action",
  "simula_camera",
+ "simula_core",
  "simula_video",
 ]
 

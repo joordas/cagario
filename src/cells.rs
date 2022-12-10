@@ -53,7 +53,7 @@ fn spawn_spheres(
         let z = rng.gen_range(-FIELD_SIZE / 2.0..FIELD_SIZE / 2.0) as f32;
         // let y = rng.gen_range(-10.0..10.0) as f32;
 
-        let size = rng.gen_range(0.1..3.0) as f32;
+        let size = rng.gen_range(0.4..1.4) as f32;
         commands
             .spawn(PbrBundle {
                 transform: Transform::from_translation(Vec3::new(x, -size / 2.0, z)),

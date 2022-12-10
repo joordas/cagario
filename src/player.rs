@@ -9,6 +9,7 @@ pub struct Player {
     translation: Vec3,
     rotation: Quat,
     pub speed: Vec2,
+    pub acceleration: Vec2,
     // pub size: f32,
 }
 const SPEED_DECREASE_RATE: f32 = 0.3;
@@ -50,6 +51,7 @@ fn player_spawner(
             translation: Vec3::new(0.0, 0.0, 0.0),
             rotation: Quat::from_xyzw(0.0, 0.0, 0.0, 0.0),
             speed: Vec2::new(0.0, 0.0),
+            acceleration: Vec2::new(1.0, 1.0),
         })
         .insert(Cell { size: 1.0 })
         .insert(Name::new("Player"))
@@ -120,6 +122,69 @@ fn update_player_position(
     }
 }
 
+// fn update_player_position(
+//     mut player_query: Query<(&GlobalTransform, &mut Transform, &mut Player), With<Player>>,
+//     windows: Res<Windows>,
+//     time: Res<Time>,
+// ) {
+//     let window = windows.get_primary().unwrap();
+
+//     if let Some(position) = window.cursor_position() {
+//         // cursor is inside the window, position given
+//         for (global_transform, mut transform, player) in player_query.iter_mut() {
+//             let mouse_position = Vec3::new(position.x, 0.0, position.y);
+//         }
+//     } else {
+//         // cursor is not inside the window
+//     }
+// }
+
+// mouse position based movement. not working yet
+
+// fn update_player_position(
+//     mut player_query: Query<(&GlobalTransform, &mut Transform, &Cell, &mut Player), With<Player>>,
+//     windows: Res<Windows>,
+//     time: Res<Time>,
+// ) {
+//     let window = windows.get_primary().unwrap();
+
+//     if let Some(position) = window.cursor_position() {
+//         // cursor is inside the window, position given
+//         // print position
+//         println!("mouse x: {}, y: {}", position.x, position.y);
+
+//         if let Some(position) = window.cursor_position() {
+//             // cursor is inside the window, position given
+//             for (global_transform, mut transform, cell, mut player) in player_query.iter_mut() {
+//                 // calculate the direction from the player to the mouse
+//                 let direction = Vec3::new(
+//                     if position.x > 640.0 { -1.0 } else { 1.0 },
+//                     0.0,
+//                     if position.y > 360.0 { 1.0 } else { -1.0 },
+//                 );
+
+//                 // update the player's speed
+//                 player.speed = player.speed + player.acceleration * time.delta_seconds();
+//                 // * Vec2::new(direction.x, direction.z);
+
+//                 // limit player speed based on cell size
+//                 let max_speed = 10.0 / (cell.size / 3.0);
+//                 // clamp the player's speed to the maximum speed
+//                 player.speed.x = player.speed.x.min(max_speed);
+//                 player.speed.y = player.speed.y.min(max_speed);
+
+//                 // update the player's position based on the direction and time elapsed
+//                 let movement_speed =
+//                     Vec3::new(player.speed.x, 0.0, player.speed.y) * time.delta_seconds();
+//                 transform.translation =
+//                     global_transform.translation() + (direction * movement_speed);
+//             }
+//         }
+//     } else {
+//         // cursor is not inside the window
+//     }
+// }
+
 fn update_player_cell_size(
     // couldn't figure how to do this with mesh query to change the radius directly. Doing with transform instead.
     // mut player_query: Query<(&Handle<Mesh>, &mut Player), With<Player>>,
@@ -157,3 +222,5 @@ fn slow_down_players(
         }
     }
 }
+
+// create map boundaries

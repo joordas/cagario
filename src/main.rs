@@ -48,6 +48,7 @@ pub struct Game {
 pub struct FollowCamera {
     height: f32,
     distance: f32,
+    speed: f32,
 }
 
 fn main() {
@@ -73,7 +74,7 @@ fn main() {
         .add_plugin(WorldInspectorPlugin::new())
         .add_state(GameState::InGame)
         .insert_resource(Game {
-            cell_spawn_timer: Timer::from_seconds(1.0, TimerMode::Repeating),
+            cell_spawn_timer: Timer::from_seconds(0.2, TimerMode::Repeating),
         })
         // my plugins
         .add_plugin(MainMenuPlugin)
@@ -137,19 +138,21 @@ fn setup(mut commands: Commands, player_query: Query<&Transform, With<Player>>, 
             });
         })
         .insert(FollowCamera {
-                distance: 120.0,
-                height: 70.0,
+                distance: 60.0,
+                height: 30.0,
+                speed: 1.0,
             })
         .insert(FlyCamera::default());
 }
 
 // update camera position following player from a distance
 fn update_camera(
+    time: Res<Time>,
     mut camera_query: Query<(&mut Transform, &FollowCamera), With<FollowCamera>>,
-    player_query: Query<&Transform, (With<Player>, Without<FollowCamera>)>,
+    player_query: Query<(&Transform, &Cell), (With<Player>, Without<FollowCamera>)>,
 ) {
     for (mut transform, follow_camera) in camera_query.iter_mut() {
-        let player_transform = player_query.single();
+        let (player_transform, cell) = player_query.single();
 
         // if player_transform  {
             let mut camera_pos = transform.translation;
@@ -158,11 +161,13 @@ fn update_camera(
             let mut camera_dir = camera_pos - player_pos;
             camera_dir = camera_dir.normalize();
 
-            camera_pos = player_pos + camera_dir * follow_camera.distance;
-            camera_pos.y = follow_camera.height;
+            camera_pos = player_pos + camera_dir * (follow_camera.distance + cell.size);
+            camera_pos.y = cell.size + follow_camera.height;
 
-            transform.translation = camera_pos;
-            transform.look_at(player_pos, Vec3::Y);
+
+                 let t = (time.delta_seconds() * follow_camera.speed).min(1.0); // adjust the speed of the transition using the `follow_camera.speed` value
+            transform.translation = transform.translation.lerp(camera_pos, t);
+            // transform.look_at(player_pos, Vec3::Y);
         // }
     }
 }
