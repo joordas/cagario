@@ -1,7 +1,10 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
-use crate::{cells::Cell, player::Player};
+use crate::{
+    cells::{Cell, NpcCell},
+    player::Player,
+};
 
 #[derive(Bundle)]
 pub struct PhysicsBundle {
@@ -31,14 +34,22 @@ impl PhysicsBundle {
 
 fn player_collision_detection(
     mut commands: Commands,
-    mut player_query: Query<(Entity, &mut Player), With<Player>>,
-    mut colliding_entities_query: Query<(Entity, &CollidingEntities, &Cell), With<Cell>>,
+    mut player_query: Query<
+        (Entity, &mut Player, &mut Cell),
+        (With<Player>, With<Cell>, Without<NpcCell>),
+    >,
+    mut colliding_entities_query: Query<
+        (Entity, &CollidingEntities, &mut Cell),
+        (With<Cell>, With<NpcCell>),
+    >,
 ) {
     for (cell_entity, colliding_entities, cell) in colliding_entities_query.iter_mut() {
-        for (player_entity, mut player) in player_query.iter_mut() {
-            if colliding_entities.contains(player_entity) && player.size > cell.size {
-                player.size += cell.size;
-                commands.entity(cell_entity).despawn_recursive();
+        for (player_entity, mut _player, mut player_cell) in player_query.iter_mut() {
+            if colliding_entities.contains(player_entity) {
+                if player_cell.size > cell.size {
+                    player_cell.size += cell.size;
+                    commands.entity(cell_entity).despawn_recursive();
+                }
             }
         }
     }

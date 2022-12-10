@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{physics::PhysicsBundle, GameState, FIELD_SIZE};
+use crate::{cells::Cell, physics::PhysicsBundle, GameState, FIELD_SIZE};
 
 #[derive(Reflect, Component, Default)]
 #[reflect(Component)]
@@ -9,7 +9,7 @@ pub struct Player {
     translation: Vec3,
     rotation: Quat,
     pub speed: Vec2,
-    pub size: f32,
+    // pub size: f32,
 }
 
 pub struct PlayerPlugin;
@@ -50,19 +50,19 @@ fn player_spawner(
             translation: Vec3::new(0.0, 0.0, 0.0),
             rotation: Quat::from_xyzw(0.0, 0.0, 0.0, 0.0),
             speed: Vec2::new(0.0, 0.0),
-            size: 1.0,
         })
+        .insert(Cell { size: 1.0 })
         .insert(Name::new("Player"))
         .insert(PhysicsBundle::moving_entity(Vec3::new(1.0, 1.0, 1.0)));
 }
 
 fn player_controls(
     keyboard: Res<Input<KeyCode>>,
-    mut player_query: Query<&mut Player, With<Player>>,
+    mut player_query: Query<(&mut Player, &Cell), (With<Player>, With<Cell>)>,
 ) {
-    let mut player = player_query.single_mut();
+    let (mut player, cell) = player_query.single_mut();
     // todo: a better way to determine max speed based on player size
-    let max_speed = 10.0 / (player.size / 3.0);
+    let max_speed = 10.0 / (cell.size / 3.0);
 
     let mut new_speed = player.speed;
 
@@ -123,14 +123,12 @@ fn update_player_position(
 fn update_player_cell_size(
     // couldn't figure how to do this with mesh query to change the radius directly. Doing with transform instead.
     // mut player_query: Query<(&Handle<Mesh>, &mut Player), With<Player>>,
-    mut player_query: Query<(&mut Transform, &Player), With<Player>>,
+    mut player_query: Query<(&mut Transform, &Cell), (With<Cell>, With<Player>)>,
     // mut player_query: Query<(&mut Transform, &mut Player), With<Player>>,
 ) {
-    let (mut transform, player) = player_query.single_mut();
+    let (mut transform, cell) = player_query.single_mut();
 
-    transform.scale = Vec3::new(player.size / 2.0, player.size / 2.0, player.size / 2.0);
-    // let scale = transform.scale();
-    // player.size = scale.x;
+    transform.scale = Vec3::new(cell.size / 3.0, cell.size / 3.0, cell.size / 3.0);
 }
 
 fn slow_down_players(

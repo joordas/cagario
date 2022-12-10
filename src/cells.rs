@@ -12,8 +12,8 @@ pub struct CellsPlugin;
 pub struct Cell {
     pub size: f32,
 }
-
-pub const CELL_RADIUS: f32 = 0.5;
+#[derive(Component)]
+pub struct NpcCell;
 
 impl Plugin for CellsPlugin {
     fn build(&self, app: &mut App) {
@@ -47,16 +47,13 @@ fn spawn_spheres(
     //     continue;
     // }
 
-    // randomly generate a delay until the next sphere is spawned
-    let delay = rng.gen_range(0.1..0.5);
-
     if game.cell_spawn_timer.just_finished() {
         // generate random x, y, and z coordinates for the sphere's position
         let x = rng.gen_range(-FIELD_SIZE / 2.0..FIELD_SIZE / 2.0) as f32;
         let z = rng.gen_range(-FIELD_SIZE / 2.0..FIELD_SIZE / 2.0) as f32;
         // let y = rng.gen_range(-10.0..10.0) as f32;
 
-        let size = rng.gen_range(0.5..2.0) as f32;
+        let size = rng.gen_range(0.1..3.0) as f32;
         commands
             .spawn(PbrBundle {
                 transform: Transform::from_translation(Vec3::new(x, -size / 2.0, z)),
@@ -68,6 +65,7 @@ fn spawn_spheres(
                 ..Default::default()
             })
             .insert(Name::new("Cell"))
+            .insert(NpcCell)
             .insert(Cell { size })
             .insert(PhysicsBundle::moving_entity(Vec3::new(
                 size / 2.0,
