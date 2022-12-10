@@ -11,7 +11,7 @@ pub struct Player {
     pub speed: Vec2,
     // pub size: f32,
 }
-
+const SPEED_DECREASE_RATE: f32 = 0.3;
 pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
@@ -144,16 +144,16 @@ fn slow_down_players(
 
     if no_keys_pressed {
         if player.speed.y > 0.0 {
-            player.speed.y -= 0.1;
+            player.speed.y -= SPEED_DECREASE_RATE;
         }
         if player.speed.y < 0.0 {
-            player.speed.y += 0.1;
+            player.speed.y += SPEED_DECREASE_RATE;
         }
         if player.speed.x < 0.0 {
-            player.speed.x += 0.1;
+            player.speed.x += SPEED_DECREASE_RATE;
         }
         if player.speed.x > 0.0 {
-            player.speed.x -= 0.1;
+            player.speed.x -= SPEED_DECREASE_RATE;
         }
     }
 }

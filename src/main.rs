@@ -43,6 +43,13 @@ pub struct Game {
     cell_spawn_timer: Timer,
 }
 
+#[derive(Reflect, Component, Default)]
+#[reflect(Component)]
+pub struct FollowCamera {
+    height: f32,
+    distance: f32,
+}
+
 fn main() {
     let mut app = App::new();
 
@@ -76,6 +83,10 @@ fn main() {
         .add_startup_system_to_stage(StartupStage::PreStartup, asset_loading)
         .add_startup_system(spawn_scene)
         .add_startup_system(setup)
+        .add_system_set(
+            SystemSet::on_update(GameState::InGame)
+                .with_system(update_camera),
+        )
         .run();
 }
 
@@ -98,9 +109,11 @@ fn spawn_scene(
     });
 }
 
-fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
+//     
+fn setup(mut commands: Commands, player_query: Query<&Transform, With<Player>>, mut images: ResMut<Assets<Image>>) {
     let rt_image = images.add(rt::common_render_target_image(UVec2 { x: 256, y: 256 }));
-
+    // first check if there is a player
+    // let player_transform = player_query.single();
     commands
         .spawn(Camera3dBundle {
             transform: Transform::from_xyz(4.4, 77.3, -91.180)
@@ -123,7 +136,35 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
                 ..default()
             });
         })
+        .insert(FollowCamera {
+                distance: 120.0,
+                height: 70.0,
+            })
         .insert(FlyCamera::default());
+}
+
+// update camera position following player from a distance
+fn update_camera(
+    mut camera_query: Query<(&mut Transform, &FollowCamera), With<FollowCamera>>,
+    player_query: Query<&Transform, (With<Player>, Without<FollowCamera>)>,
+) {
+    for (mut transform, follow_camera) in camera_query.iter_mut() {
+        let player_transform = player_query.single();
+
+        // if player_transform  {
+            let mut camera_pos = transform.translation;
+            let player_pos = player_transform.translation;
+
+            let mut camera_dir = camera_pos - player_pos;
+            camera_dir = camera_dir.normalize();
+
+            camera_pos = player_pos + camera_dir * follow_camera.distance;
+            camera_pos.y = follow_camera.height;
+
+            transform.translation = camera_pos;
+            transform.look_at(player_pos, Vec3::Y);
+        // }
+    }
 }
 
 
