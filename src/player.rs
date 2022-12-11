@@ -9,7 +9,9 @@ pub struct Player {
     pub speed: f32,
     pub movement_angle: f32,
 }
-const SPEED_DECREASE_RATE: f32 = 0.3;
+const SPEED_DECREASE_RATE: f32 = 0.1;
+const INITIAL_PLAYER_SIZE: f32 = 1.0;
+
 pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
@@ -25,7 +27,6 @@ impl Plugin for PlayerPlugin {
             .add_system_set(SystemSet::on_enter(GameState::InGame).with_system(player_spawner));
     }
 }
-
 // Define the PlayerSpawner system
 fn player_spawner(
     mut commands: Commands,
@@ -38,7 +39,7 @@ fn player_spawner(
     commands
         .spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Icosphere {
-                radius: 1.0,
+                radius: INITIAL_PLAYER_SIZE,
                 subdivisions: 4,
             })),
             material: materials.add(Color::rgb(0.5, 0.5, 1.0).into()),
@@ -49,9 +50,15 @@ fn player_spawner(
             speed: 0.0,
             movement_angle: 0.0,
         })
-        .insert(Cell { size: 1.0 })
+        .insert(Cell {
+            size: INITIAL_PLAYER_SIZE,
+        })
         .insert(Name::new("Player"))
-        .insert(PhysicsBundle::moving_entity(Vec3::new(1.0, 1.0, 1.0)));
+        .insert(PhysicsBundle::moving_entity(Vec3::new(
+            INITIAL_PLAYER_SIZE * 1.5,
+            INITIAL_PLAYER_SIZE * 1.5,
+            INITIAL_PLAYER_SIZE * 1.5,
+        )));
 }
 
 fn player_controls(
@@ -61,7 +68,11 @@ fn player_controls(
 ) {
     let (mut player, cell) = player_query.single_mut();
     // todo: a better way to determine max speed based on player size
-    let max_speed = 2.0;
+    // let max_speed = 2.0;
+
+    // max speed based on player cell size, smaller is faster
+    let mut max_speed = 3.0 / cell.size;
+    max_speed = max_speed.max(0.5);
 
     if keyboard.pressed(KeyCode::W) {
         player.speed += 0.1;
@@ -158,10 +169,12 @@ fn slow_down_players(
 
     if no_keys_pressed {
         if player.speed > 0.0 {
-            player.speed -= 0.1;
+            player.speed -= SPEED_DECREASE_RATE;
+            player.speed = player.speed.max(0.0);
         }
         if player.speed < 0.0 {
-            player.speed += 0.1;
+            player.speed += SPEED_DECREASE_RATE;
+            player.speed = player.speed.min(0.0);
         }
     }
 }

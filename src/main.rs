@@ -7,13 +7,12 @@ use simula_video::rt;
 
 use bevy_rapier3d::{
     prelude::{NoUserData, RapierPhysicsPlugin},
-    render::RapierDebugRenderPlugin,
 };
 
 pub const HEIGHT: f32 = 720.0;
 pub const WIDTH: f32 = 1280.0;
 
-pub const FIELD_SIZE: f32 = 200.0;
+pub const FIELD_SIZE: f32 = 800.0;
 
 mod main_menu;
 mod player;
@@ -66,7 +65,7 @@ fn main() {
             ..default()
         }))
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierDebugRenderPlugin::default())
+        // .add_plugin(RapierDebugRenderPlugin::default())
         .add_plugin(EguiPlugin)
         .add_plugin(ActionPlugin)
         .add_plugin(OrbitCameraPlugin)
@@ -74,7 +73,7 @@ fn main() {
         .add_plugin(WorldInspectorPlugin::new())
         .add_state(GameState::InGame)
         .insert_resource(Game {
-            cell_spawn_timer: Timer::from_seconds(0.2, TimerMode::Repeating),
+            cell_spawn_timer: Timer::from_seconds(0.1, TimerMode::Repeating),
         })
         // my plugins
         .add_plugin(MainMenuPlugin)
@@ -138,8 +137,8 @@ fn setup(mut commands: Commands, player_query: Query<&Transform, With<Player>>, 
             });
         })
         .insert(FollowCamera {
-                distance: 30.0,
-                height: 30.0,
+                distance: 60.0,
+                height: 50.0,
                 speed: 1.0,
             })
         .insert(FlyCamera::default());
@@ -162,10 +161,10 @@ fn update_camera(
             camera_dir = camera_dir.normalize();
 
             camera_pos = player_pos + camera_dir * (follow_camera.distance + cell.size);
-            camera_pos.y = cell.size + follow_camera.height;
+            camera_pos.y = (cell.size * 2.0) + follow_camera.height;
 
 
-                 let t = (time.delta_seconds() * follow_camera.speed).min(1.0); // adjust the speed of the transition using the `follow_camera.speed` value
+            let t = (time.delta_seconds() * follow_camera.speed).min(1.0); // adjust the speed of the transition using the `follow_camera.speed` value
             transform.translation = transform.translation.lerp(camera_pos, t);
             transform.look_at(player_pos, Vec3::Y);
         // }
