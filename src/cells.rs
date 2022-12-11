@@ -8,7 +8,8 @@ pub struct MaxSpheres(usize);
 
 pub struct CellsPlugin;
 
-#[derive(Component)]
+#[derive(Reflect, Component, Default)]
+#[reflect(Component)]
 pub struct Cell {
     pub size: f32,
 }
@@ -17,7 +18,8 @@ pub struct NpcCell;
 
 impl Plugin for CellsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup)
+        app.register_type::<Cell>()
+            .add_startup_system(setup)
             .add_system_set(SystemSet::on_update(GameState::InGame).with_system(spawn_spheres));
     }
 }
@@ -51,7 +53,6 @@ fn spawn_spheres(
         // generate random x, y, and z coordinates for the sphere's position
         let x = rng.gen_range(-FIELD_SIZE / 2.0..FIELD_SIZE / 2.0) as f32;
         let z = rng.gen_range(-FIELD_SIZE / 2.0..FIELD_SIZE / 2.0) as f32;
-        // let y = rng.gen_range(-10.0..10.0) as f32;
 
         let size = rng.gen_range(0.4..1.4) as f32;
         commands

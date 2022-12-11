@@ -9,6 +9,11 @@ use bevy_rapier3d::{
     prelude::{NoUserData, RapierPhysicsPlugin},
 };
 
+use simula_viz::{
+    grid::{Grid, GridBundle, GridPlugin},
+    lines::{LineMesh, LinesMaterial, LinesPlugin},
+};
+
 pub const HEIGHT: f32 = 720.0;
 pub const WIDTH: f32 = 1280.0;
 
@@ -80,19 +85,32 @@ fn main() {
         .add_plugin(PlayerPlugin)
         .add_plugin(CellsPlugin)
         .add_plugin(PhysicsPlugin)
+
+        .add_plugin(LinesPlugin)
+        .add_plugin(GridPlugin)
+
         .add_startup_system_to_stage(StartupStage::PreStartup, asset_loading)
         .add_startup_system(spawn_scene)
         .add_startup_system(setup)
+        // .add_startup_system(spawn_grid_lines)
+        // .add_startup_system(spawn_floor_grid)
         .add_system_set(
             SystemSet::on_update(GameState::InGame)
-                .with_system(update_camera),
+                .with_system(update_camera)
+        )
+        .add_system_set(
+            SystemSet::on_enter(GameState::InGame)
+                .with_system(spawn_grid_lines)
         )
         .run();
 }
 
+
 fn spawn_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
+    mut lines_materials: ResMut<Assets<LinesMaterial>>,
+    line_mesh: Res<LineMesh>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     commands
@@ -109,7 +127,33 @@ fn spawn_scene(
     });
 }
 
-//     
+fn spawn_grid_lines(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut lines_materials: ResMut<Assets<LinesMaterial>>,
+    line_mesh: Res<LineMesh>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    let start_color: Color = Color::rgb(0.4, 0.4, 0.4);
+    let end_color: Color = Color::rgb(0.4, 0.4, 0.4);
+
+    commands
+        .spawn(GridBundle {
+            grid: Grid {
+                size: FIELD_SIZE as u32,
+                divisions: FIELD_SIZE as u32 / 4,
+                start_color,
+                end_color,
+                ..default()
+            },
+            mesh: meshes.add(line_mesh.clone()),
+            material: lines_materials.add(LinesMaterial {}),
+            transform: Transform::from_translation(Vec3::new(0.0, 0.01, 0.0)),
+            ..default()
+        })
+        .insert(Name::new("Grid"));
+}
+
 fn setup(mut commands: Commands, player_query: Query<&Transform, With<Player>>, mut images: ResMut<Assets<Image>>) {
     let rt_image = images.add(rt::common_render_target_image(UVec2 { x: 256, y: 256 }));
     // first check if there is a player
@@ -138,7 +182,7 @@ fn setup(mut commands: Commands, player_query: Query<&Transform, With<Player>>, 
         })
         .insert(FollowCamera {
                 distance: 60.0,
-                height: 50.0,
+                height: 20.0,
                 speed: 1.0,
             })
         .insert(FlyCamera::default());
