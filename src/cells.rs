@@ -1,7 +1,8 @@
 use bevy::prelude::*;
+use bevy_renet::renet::{RenetClient, RenetServer, ServerEvent};
 use rand::*;
 
-use crate::{physics::PhysicsBundle, Game, GameState, FIELD_SIZE};
+use crate::{physics::PhysicsBundle, Game, GameState, ServerChannel, ServerMessages, FIELD_SIZE};
 
 #[derive(Resource)]
 pub struct MaxSpheres(usize);
@@ -19,23 +20,19 @@ pub struct NpcCell;
 impl Plugin for CellsPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Cell>()
-            .add_startup_system(setup)
             .add_system_set(SystemSet::on_update(GameState::InGame).with_system(spawn_spheres));
     }
 }
 
-fn setup(mut commands: Commands) {
-    // set the maximum number of spheres to spawn
-    commands.insert_resource(MaxSpheres(100));
-}
-
 // define the system that will spawn the spheres
-fn spawn_spheres(
+pub fn spawn_spheres(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     time: Res<Time>,
-    max_spheres: Res<MaxSpheres>,
+    mut server: ResMut<RenetServer>,
+
+    // max_spheres: Res<MaxSpheres>,
     // mut cell_query: Query<(&mut Transform, With<Cell>)>,
     mut game: ResMut<Game>,
 ) {
@@ -55,7 +52,7 @@ fn spawn_spheres(
         let z = rng.gen_range(-FIELD_SIZE / 2.0..FIELD_SIZE / 2.0) as f32;
 
         let size = rng.gen_range(0.4..1.4) as f32;
-        commands
+        let entity = commands
             .spawn(PbrBundle {
                 transform: Transform::from_translation(Vec3::new(x, -size / 2.0, z)),
                 mesh: meshes.add(Mesh::from(shape::Icosphere {
@@ -72,6 +69,16 @@ fn spawn_spheres(
                 size * 1.5,
                 size * 1.5,
                 size * 1.5,
-            )));
+            )))
+            .id();
+
+        let message = bincode::serialize(&ServerMessages::SpawnNpcCell {
+            // id: player.id,
+            size,
+            entity,
+            translation: [x, -size / 2.0, z],
+        })
+        .unwrap();
+        server.broadcast_message(ServerChannel::ServerMessages, message);
     }
 }

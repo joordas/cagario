@@ -3,7 +3,7 @@ use bevy_rapier3d::prelude::*;
 
 use crate::{
     cells::{Cell, NpcCell},
-    player::Player,
+    Player,
 };
 
 #[derive(Bundle)]
