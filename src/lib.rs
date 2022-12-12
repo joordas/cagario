@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
+use cells::Cell;
 use simula_viz::{
     grid::{Grid, GridBundle},
     lines::{LineMesh, LinesMaterial},
@@ -19,7 +20,7 @@ pub mod main_menu;
 pub mod physics;
 pub mod player;
 
-pub const FIELD_SIZE: f32 = 800.0;
+pub const FIELD_SIZE: f32 = 900.0;
 
 pub const PRIVATE_KEY: &[u8; NETCODE_KEY_BYTES] = b"an example very very secret key."; // 32-bytes
 pub const PROTOCOL_ID: u64 = 7;
@@ -96,12 +97,20 @@ pub enum ServerMessages {
         translation: [f32; 3],
         size: f32,
     },
+    DespawnEntity {
+        entity: Entity,
+    },
+    UpdateEntityCell {
+        entity: Entity,
+        size: f32,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct NetworkedEntities {
     pub entities: Vec<Entity>,
     pub translations: Vec<[f32; 3]>,
+    pub scalings: Vec<[f32; 3]>,
 }
 
 impl From<ClientChannel> for u8 {
@@ -240,12 +249,13 @@ pub fn setup_camera(mut commands: Commands) {
 
 pub fn camera_follow(
     mut camera_query: Query<&mut LookTransform, (With<Camera>, Without<ControlledPlayer>)>,
-    player_query: Query<&Transform, With<ControlledPlayer>>,
+    player_query: Query<(&Transform, &Cell), With<ControlledPlayer>>,
 ) {
     let mut cam_transform = camera_query.single_mut();
-    if let Ok(player_transform) = player_query.get_single() {
+    if let Ok((player_transform, cell)) = player_query.get_single() {
         cam_transform.eye.x = player_transform.translation.x;
-        cam_transform.eye.z = player_transform.translation.z + 16.5;
+        cam_transform.eye.z = player_transform.translation.z + 16.5 + cell.size;
+        cam_transform.eye.y = player_transform.translation.y + (3.0 * cell.size);
         cam_transform.target = player_transform.translation;
     }
 }

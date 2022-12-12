@@ -1,5 +1,6 @@
 use bevy::prelude::*;
-use bevy_renet::renet::{RenetClient, RenetServer, ServerEvent};
+use bevy_rapier3d::prelude::Collider;
+use bevy_renet::renet::RenetServer;
 use rand::*;
 
 use crate::{physics::PhysicsBundle, Game, GameState, ServerChannel, ServerMessages, FIELD_SIZE};
@@ -65,11 +66,8 @@ pub fn spawn_spheres(
             .insert(Name::new("Cell"))
             .insert(NpcCell)
             .insert(Cell { size })
-            .insert(PhysicsBundle::moving_entity(Vec3::new(
-                size * 1.5,
-                size * 1.5,
-                size * 1.5,
-            )))
+            .insert(Collider::ball(size))
+            .insert(PhysicsBundle::moving_entity())
             .id();
 
         let message = bincode::serialize(&ServerMessages::SpawnNpcCell {

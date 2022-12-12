@@ -14,11 +14,13 @@ use bevy_renet::{
 };
 use cagario::{
     cells::{spawn_spheres, Cell},
-    physics::PhysicsPlugin,
-    player::INITIAL_PLAYER_SIZE,
+    physics::{PhysicsBundle, PhysicsPlugin},
+    player::{update_player_cell_size, INITIAL_PLAYER_SIZE},
     server_connection_config, ClientChannel, Player, PlayerCommand, PlayerInput, ServerChannel,
     ServerMessages, PROTOCOL_ID,
 };
+
+use bevy_inspector_egui::WorldInspectorPlugin;
 
 #[derive(Debug, Default, Resource)]
 pub struct ServerLobby {
@@ -54,6 +56,7 @@ fn main() {
     app.add_plugin(FrameTimeDiagnosticsPlugin::default());
     app.add_plugin(LogDiagnosticsPlugin::default());
     app.add_plugin(EguiPlugin);
+    app.add_plugin(WorldInspectorPlugin::new());
     // app.insert_resource(PlayerInput::default());
 
     app.add_plugin(PhysicsPlugin);
@@ -63,6 +66,7 @@ fn main() {
 
     app.insert_resource(ServerLobby::default());
     app.insert_resource(new_renet_server());
+    app.register_type::<Cell>();
     // app.insert_resource(RenetServerVisualizer::<200>::default());
 
     app.add_system(server_update_system);
@@ -74,6 +78,7 @@ fn main() {
     app.add_system(server_network_sync);
     app.add_system(move_players_system);
     app.add_system(spawn_spheres);
+    app.add_system(update_player_cell_size);
     // app.add_system(move_players_system);
     // app.add_system(update_projectiles_system);
     // app.add_system(update_visulizer_system);
@@ -85,7 +90,7 @@ fn main() {
     );
 
     app.insert_resource(Game {
-        cell_spawn_timer: Timer::from_seconds(0.1, TimerMode::Repeating),
+        cell_spawn_timer: Timer::from_seconds(1.0, TimerMode::Repeating),
     });
 
     // app.add_startup_system(setup_level);
@@ -126,8 +131,8 @@ fn server_update_system(
 
                 let x = rng.gen_range(-FIELD_SIZE / 2.0..FIELD_SIZE / 2.0) as f32;
                 let z = rng.gen_range(-FIELD_SIZE / 2.0..FIELD_SIZE / 2.0) as f32;
-                let rand_transform = Transform::from_xyz(x, 0.0, z);
-                // let rand_transform = Transform::from_xyz(0.0, 0.0, 0.0);
+                // let rand_transform = Transform::from_xyz(x, 0.0, z);
+                let rand_transform = Transform::from_xyz(0.0, 0.0, 0.0);
                 let player_entity = commands
                     .spawn(PbrBundle {
                         mesh: meshes.add(Mesh::from(shape::Icosphere {
@@ -145,6 +150,7 @@ fn server_update_system(
                     .insert(Name::new("Player"))
                     .insert(PlayerInput::default())
                     .insert(Velocity::default())
+                    .insert(PhysicsBundle::moving_entity())
                     .insert(Collider::ball(INITIAL_PLAYER_SIZE))
                     .id();
 
@@ -227,6 +233,7 @@ fn server_network_sync(
         networked_entities
             .translations
             .push(transform.translation.into());
+        networked_entities.scalings.push(transform.scale.into());
     }
 
     let sync_message = bincode::serialize(&networked_entities).unwrap();
@@ -236,7 +243,7 @@ fn server_network_sync(
 pub fn setup_simple_camera(mut commands: Commands) {
     // camera
     commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(-5.5, 60.0, 55.5).looking_at(Vec3::ZERO, Vec3::Y),
+        transform: Transform::from_xyz(-5.5, 120.0, 75.5).looking_at(Vec3::ZERO, Vec3::Y),
         ..Default::default()
     });
 }

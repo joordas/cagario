@@ -12,7 +12,10 @@ use simula_camera::orbitcam::*;
 // use simula_video::rt;
 use smooth_bevy_cameras::LookTransformPlugin;
 
-use bevy_rapier3d::prelude::{Collider, NoUserData, RapierPhysicsPlugin, Velocity};
+use bevy_rapier3d::{
+    prelude::{Collider, NoUserData, RapierPhysicsPlugin, Velocity},
+    render::RapierDebugRenderPlugin,
+};
 
 use simula_viz::{grid::GridPlugin, lines::LinesPlugin};
 
@@ -75,7 +78,7 @@ fn main() {
         }))
         .insert_resource(PlayerInput::default())
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        // .add_plugin(RapierDebugRenderPlugin::default())
+        .add_plugin(RapierDebugRenderPlugin::default())
         .add_plugin(EguiPlugin)
         .add_plugin(ActionPlugin)
         .add_plugin(OrbitCameraPlugin)
@@ -84,6 +87,7 @@ fn main() {
         .add_state(GameState::InGame);
 
     app.add_event::<PlayerCommand>();
+    app.register_type::<Cell>();
     app.register_type::<PlayerInput>();
     app.insert_resource(ClientLobby::default());
     app.insert_resource(PlayerInput::default());
@@ -95,14 +99,10 @@ fn main() {
 
     // my plugins
     app.add_plugin(MainMenuPlugin)
-        .add_plugin(PlayerPlugin)
-        // .add_plugin(CellsPlugin)
-        .add_plugin(PhysicsPlugin)
         .add_plugin(LinesPlugin)
         .add_plugin(GridPlugin)
         .add_plugin(LookTransformPlugin)
         // .add_startup_system_to_stage(StartupStage::PreStartup, asset_loading)
-        // .add_startup_system(setup)
         .add_plugin(RenetClientPlugin::default())
         .add_startup_system(spawn_scene)
         .add_startup_system(spawn_grid_lines)
@@ -112,78 +112,14 @@ fn main() {
         .add_system(client_send_player_commands.with_run_criteria(run_if_client_connected))
         .add_system(client_sync_players.with_run_criteria(run_if_client_connected))
         .add_system(player_input)
+        .add_plugin(PlayerPlugin)
         .add_system_to_stage(
             CoreStage::PostUpdate,
             disconnect_on_exit.after(exit_on_all_closed),
         )
-        // .add_system_set(SystemSet::on_update(GameState::InGame).with_system(update_camera))
         .add_system_set(SystemSet::on_enter(GameState::InGame).with_system(spawn_grid_lines))
         .run();
 }
-
-// fn setup(
-//     mut commands: Commands,
-//     player_query: Query<&Transform, With<Player>>,
-//     mut images: ResMut<Assets<Image>>,
-// ) {
-//     let rt_image = images.add(rt::common_render_target_image(UVec2 { x: 256, y: 256 }));
-//     // first check if there is a player
-//     // let player_transform = player_query.single();
-//     commands
-//         .spawn(Camera3dBundle {
-//             transform: Transform::from_xyz(4.4, 77.3, -91.180)
-//                 .looking_at(Vec3::new(0.0, 1.0, 0.0), Vec3::Y),
-
-//             ..default()
-//         })
-//         .insert(RenderLayers::all())
-//         .with_children(|parent| {
-//             let mut _child = parent.spawn(Camera3dBundle {
-//                 camera_3d: Camera3d {
-//                     clear_color: ClearColorConfig::Custom(Color::BLACK),
-//                     ..default()
-//                 },
-//                 camera: Camera {
-//                     priority: -1,
-//                     target: bevy::render::camera::RenderTarget::Image(rt_image.clone()),
-//                     ..default()
-//                 },
-//                 ..default()
-//             });
-//         })
-//         .insert(FollowCamera {
-//             distance: 60.0,
-//             height: 20.0,
-//             speed: 1.0,
-//         })
-//         .insert(FlyCamera::default());
-// }
-
-// update camera position following player from a distance
-// fn update_camera(
-//     time: Res<Time>,
-//     mut camera_query: Query<(&mut Transform, &FollowCamera), With<FollowCamera>>,
-//     player_query: Query<(&Transform, &Cell), (With<Player>, Without<FollowCamera>)>,
-// ) {
-//     for (mut transform, follow_camera) in camera_query.iter_mut() {
-//         let (player_transform, cell) = player_query.single();
-
-//         // if player_transform  {
-//         let mut camera_pos = transform.translation;
-//         let player_pos = player_transform.translation;
-
-//         let mut camera_dir = camera_pos - player_pos;
-//         camera_dir = camera_dir.normalize();
-
-//         camera_pos = player_pos + camera_dir * (follow_camera.distance + cell.size);
-//         camera_pos.y = (cell.size * 2.0) + follow_camera.height;
-
-//         let t = (time.delta_seconds() * follow_camera.speed).min(1.0); // adjust the speed of the transition using the `follow_camera.speed` value
-//         transform.translation = transform.translation.lerp(camera_pos, t);
-//         transform.look_at(player_pos, Vec3::Y);
-//         // }
-//     }
-// }
 
 fn client_send_input(player_input: Res<PlayerInput>, mut client: ResMut<RenetClient>) {
     let input_message = bincode::serialize(&*player_input).unwrap();
@@ -234,6 +170,7 @@ fn client_sync_players(
                     .insert(Cell {
                         size: INITIAL_PLAYER_SIZE,
                     })
+                    .insert(PhysicsBundle::moving_entity())
                     .insert(Name::new("Player"))
                     .insert(PlayerInput::default())
                     .insert(Velocity::default())
@@ -281,8 +218,20 @@ fn client_sync_players(
                 npc_entity
                     .insert(Cell { size })
                     .insert(Name::new("NPC"))
-                    .insert(Collider::ball(size));
+                    .insert(Collider::ball(size))
+                    .insert(PhysicsBundle::moving_entity())
+                    .insert(NpcCell);
                 network_mapping.0.insert(entity, npc_entity.id());
+            }
+            ServerMessages::DespawnEntity { entity } => {
+                if let Some(client_entity) = network_mapping.0.remove(&entity) {
+                    commands.entity(client_entity).despawn();
+                }
+            }
+            ServerMessages::UpdateEntityCell { entity, size } => {
+                if let Some(client_entity) = network_mapping.0.get(&entity) {
+                    commands.entity(*client_entity).insert(Cell { size });
+                }
             }
         }
     }
@@ -293,8 +242,10 @@ fn client_sync_players(
         for i in 0..networked_entities.entities.len() {
             if let Some(entity) = network_mapping.0.get(&networked_entities.entities[i]) {
                 let translation = networked_entities.translations[i].into();
+                let scale: Vec3 = networked_entities.scalings[i].into();
                 let transform = Transform {
                     translation,
+                    scale: Vec3::from(scale),
                     ..Default::default()
                 };
                 commands.entity(*entity).insert(transform);
