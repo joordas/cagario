@@ -90,7 +90,7 @@ fn main() {
     );
 
     app.insert_resource(Game {
-        cell_spawn_timer: Timer::from_seconds(1.0, TimerMode::Repeating),
+        cell_spawn_timer: Timer::from_seconds(0.2, TimerMode::Repeating),
     });
 
     // app.add_startup_system(setup_level);
@@ -131,8 +131,8 @@ fn server_update_system(
 
                 let x = rng.gen_range(-FIELD_SIZE / 2.0..FIELD_SIZE / 2.0) as f32;
                 let z = rng.gen_range(-FIELD_SIZE / 2.0..FIELD_SIZE / 2.0) as f32;
-                // let rand_transform = Transform::from_xyz(x, 0.0, z);
-                let rand_transform = Transform::from_xyz(0.0, 0.0, 0.0);
+                let rand_transform = Transform::from_xyz(x, 0.0, z);
+                // let rand_transform = Transform::from_xyz(0.0, 0.0, 0.0);
                 let player_entity = commands
                     .spawn(PbrBundle {
                         mesh: meshes.add(Mesh::from(shape::Icosphere {

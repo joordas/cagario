@@ -9,7 +9,7 @@ use crate::{cells::Cell, GameState, Player, PlayerInput, FIELD_SIZE};
 //     pub movement_angle: f32,
 // }
 // const SPEED_DECREASE_RATE: f32 = 0.1;
-pub const INITIAL_PLAYER_SIZE: f32 = 3.0;
+pub const INITIAL_PLAYER_SIZE: f32 = 1.0;
 
 #[derive(Reflect, Component, Default)]
 pub struct Spawned;

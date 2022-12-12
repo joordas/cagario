@@ -255,7 +255,7 @@ pub fn camera_follow(
     if let Ok((player_transform, cell)) = player_query.get_single() {
         cam_transform.eye.x = player_transform.translation.x;
         cam_transform.eye.z = player_transform.translation.z + 16.5 + cell.size;
-        cam_transform.eye.y = player_transform.translation.y + (3.0 * cell.size);
+        cam_transform.eye.y = player_transform.translation.y + 22.0 + (3.0 * cell.size);
         cam_transform.target = player_transform.translation;
     }
 }
