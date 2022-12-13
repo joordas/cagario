@@ -86,26 +86,47 @@ fn player_to_player_collision_detection(
                 if let Ok(Some(cell_2)) = cell_query.get(*entity2) {
                     if cell_1.size > cell_2.size {
                         for (player_entity, player) in player_query.iter_mut() {
+                            println!("player: {:?}", player_entity);
                             if player_entity == *entity1 {
+                                println!("is growing: {:?}", player_entity);
                                 let new_size = cell_1.size + cell_2.size / 2.0;
                                 let message = ServerMessages::UpdateEntityCell {
-                                    entity: *entity1,
+                                    entity: player_entity,
                                     size: new_size,
                                 };
                                 let message = bincode::serialize(&message).unwrap();
                                 server.broadcast_message(ServerChannel::ServerMessages, message);
                             } else if player_entity == *entity2 {
-                                let new_size = cell_2.size + cell_1.size / 2.0;
-                                let message = ServerMessages::UpdateEntityCell {
-                                    entity: *entity2,
-                                    size: new_size,
-                                };
-                                let message = bincode::serialize(&message).unwrap();
-                                server.broadcast_message(ServerChannel::ServerMessages, message);
+                                println!("is dying: {:?}", player_entity);
 
                                 if let Some(player_entity) = lobby.players.remove(&player.id) {
                                     commands.entity(player_entity).despawn();
                                 }
+
+                                let message = bincode::serialize(&ServerMessages::PlayerRemove {
+                                    id: player.id,
+                                })
+                                .unwrap();
+                                server.broadcast_message(ServerChannel::ServerMessages, message);
+                            }
+                        }
+                    } else if cell_1.size < cell_2.size {
+                        for (player_entity, player) in player_query.iter_mut() {
+                            if player_entity == *entity2 {
+                                println!("is growing: {:?}", player_entity);
+
+                                let new_size = cell_2.size + cell_1.size / 2.0;
+                                let message = ServerMessages::UpdateEntityCell {
+                                    entity: player_entity,
+                                    size: new_size,
+                                };
+                                let message = bincode::serialize(&message).unwrap();
+                                server.broadcast_message(ServerChannel::ServerMessages, message);
+                            } else if player_entity == *entity1 {
+                                if let Some(player_entity) = lobby.players.remove(&player.id) {
+                                    commands.entity(player_entity).despawn();
+                                }
+                                println!("is dying: {:?}", player_entity);
 
                                 let message = bincode::serialize(&ServerMessages::PlayerRemove {
                                     id: player.id,

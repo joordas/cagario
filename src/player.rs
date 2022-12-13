@@ -58,7 +58,7 @@ fn limit_player_movement(mut player_query: Query<&mut Transform, With<Player>>) 
 pub fn update_player_cell_size(
     // couldn't figure how to do this with mesh query to change the radius directly. Doing with transform instead.
     // mut player_query: Query<(&Handle<Mesh>, &mut Player), With<Player>>,
-    mut player_query: Query<(&mut Transform, &Cell), (With<Cell>, With<PlayerInput>)>,
+    mut player_query: Query<(&mut Transform, &Cell), (With<Cell>, With<Player>)>,
     // mut player_query: Query<(&mut Transform, &mut Player), With<Player>>,
 ) {
     for player in player_query.iter_mut() {
