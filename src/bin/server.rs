@@ -1,10 +1,7 @@
 use std::{net::UdpSocket, time::SystemTime};
 
 use bevy::{
-    app::AppExit,
-    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
-    prelude::*,
-    window::exit_on_all_closed,
+    app::AppExit, diagnostic::LogDiagnosticsPlugin, prelude::*, window::exit_on_all_closed,
 };
 use bevy_egui::EguiPlugin;
 use bevy_rapier3d::prelude::{ActiveEvents, *};
@@ -22,7 +19,7 @@ use cagario::{
 
 use bevy_inspector_egui::WorldInspectorPlugin;
 
-const PLAYER_MOVE_SPEED: f32 = 30.0;
+const PLAYER_MOVE_SPEED: f32 = 20.0;
 
 fn new_renet_server() -> RenetServer {
     let server_addr = "127.0.0.1:5000".parse().unwrap();
@@ -138,10 +135,11 @@ fn server_update_system(
 
                 let mut rng = rand::thread_rng();
 
-                let x = rng.gen_range(-FIELD_SIZE / 2.0..FIELD_SIZE / 2.0) as f32;
-                let z = rng.gen_range(-FIELD_SIZE / 2.0..FIELD_SIZE / 2.0) as f32;
-                // let x = rng.gen_range(-50.0 / 2.0..50.0 / 2.0) as f32;
-                // let z = rng.gen_range(-50.0 / 2.0..50.0 / 2.0) as f32;
+                // not using entire field size so we can se our players from the server window
+                // let x = rng.gen_range(-FIELD_SIZE / 2.0..FIELD_SIZE / 2.0) as f32;
+                // let z = rng.gen_range(-FIELD_SIZE / 2.0..FIELD_SIZE / 2.0) as f32;
+                let x = rng.gen_range(-50.0 / 2.0..50.0 / 2.0) as f32;
+                let z = rng.gen_range(-50.0 / 2.0..50.0 / 2.0) as f32;
                 let rand_transform = Transform::from_xyz(x, 0.0, z);
                 // let rand_transform = Transform::from_xyz(0.0, 0.0, 0.0);
                 let player_entity = commands
@@ -163,7 +161,7 @@ fn server_update_system(
                     .insert(Velocity::default())
                     .insert(ActiveEvents::COLLISION_EVENTS)
                     .insert(PhysicsBundle::moving_entity())
-                    .insert(Collider::ball(INITIAL_PLAYER_SIZE) / 2.0)
+                    .insert(Collider::ball(INITIAL_PLAYER_SIZE / 2.0))
                     .id();
 
                 lobby.players.insert(*id, player_entity);

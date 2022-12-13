@@ -25,6 +25,8 @@ impl Plugin for CellsPlugin {
     }
 }
 
+pub const MAX_SPHERES: usize = 1000;
+
 // define the system that will spawn the spheres
 pub fn spawn_spheres(
     mut commands: Commands,
@@ -34,7 +36,7 @@ pub fn spawn_spheres(
     mut server: ResMut<RenetServer>,
 
     // max_spheres: Res<MaxSpheres>,
-    // mut cell_query: Query<(&mut Transform, With<Cell>)>,
+    cell_query: Query<(&mut Transform, With<NpcCell>)>,
     mut game: ResMut<Game>,
 ) {
     // create a random number generator
@@ -43,41 +45,38 @@ pub fn spawn_spheres(
     game.cell_spawn_timer.tick(time.delta());
     // for (mut transform, mut spawner) in cell_query.iter_mut() {
     // check if the maximum number of spheres has been reached
-    // if cell_query.len() >= max_spheres.0 {
-    //     continue;
-    // }
+    if cell_query.iter().count() <= MAX_SPHERES {
+        if game.cell_spawn_timer.just_finished() {
+            // generate random x, y, and z coordinates for the sphere's position
+            let x = rng.gen_range(-FIELD_SIZE / 2.0..FIELD_SIZE / 2.0) as f32;
+            let z = rng.gen_range(-FIELD_SIZE / 2.0..FIELD_SIZE / 2.0) as f32;
+            let size = rng.gen_range(0.4..1.4) as f32;
+            let entity = commands
+                .spawn(PbrBundle {
+                    transform: Transform::from_translation(Vec3::new(x, -size / 2.0, z)),
+                    mesh: meshes.add(Mesh::from(shape::Icosphere {
+                        radius: size,
+                        subdivisions: 4,
+                    })),
+                    material: materials.add(Color::rgb(x, z, size).into()),
+                    ..Default::default()
+                })
+                .insert(Name::new("Cell"))
+                .insert(NpcCell)
+                .insert(Cell { size })
+                .insert(ActiveEvents::COLLISION_EVENTS)
+                .insert(Collider::ball(size / 2.0))
+                .insert(PhysicsBundle::moving_entity())
+                .id();
 
-    if game.cell_spawn_timer.just_finished() {
-        // generate random x, y, and z coordinates for the sphere's position
-        let x = rng.gen_range(-FIELD_SIZE / 2.0..FIELD_SIZE / 2.0) as f32;
-        let z = rng.gen_range(-FIELD_SIZE / 2.0..FIELD_SIZE / 2.0) as f32;
-
-        let size = rng.gen_range(0.4..1.4) as f32;
-        let entity = commands
-            .spawn(PbrBundle {
-                transform: Transform::from_translation(Vec3::new(x, -size / 2.0, z)),
-                mesh: meshes.add(Mesh::from(shape::Icosphere {
-                    radius: size,
-                    subdivisions: 4,
-                })),
-                material: materials.add(Color::rgb(x, z, size).into()),
-                ..Default::default()
+            let message = bincode::serialize(&ServerMessages::SpawnNpcCell {
+                // id: player.id,
+                size,
+                entity,
+                translation: [x, -size / 2.0, z],
             })
-            .insert(Name::new("Cell"))
-            .insert(NpcCell)
-            .insert(Cell { size })
-            .insert(ActiveEvents::COLLISION_EVENTS)
-            .insert(Collider::ball(size / 2.0))
-            .insert(PhysicsBundle::moving_entity())
-            .id();
-
-        let message = bincode::serialize(&ServerMessages::SpawnNpcCell {
-            // id: player.id,
-            size,
-            entity,
-            translation: [x, -size / 2.0, z],
-        })
-        .unwrap();
-        server.broadcast_message(ServerChannel::ServerMessages, message);
+            .unwrap();
+            server.broadcast_message(ServerChannel::ServerMessages, message);
+        }
     }
 }
