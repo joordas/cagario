@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashMap};
 
 use cells::Cell;
 use simula_viz::{
@@ -22,7 +22,7 @@ pub mod player;
 
 pub const FIELD_SIZE: f32 = 900.0;
 
-pub const PRIVATE_KEY: &[u8; NETCODE_KEY_BYTES] = b"an example very very secret key."; // 32-bytes
+pub const PRIVATE_KEY: &[u8; NETCODE_KEY_BYTES] = b"an example veas very secret key."; // 32-bytes
 pub const PROTOCOL_ID: u64 = 7;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -30,6 +30,11 @@ pub enum GameState {
     MainMenu,
     InGame,
     GameOver,
+}
+
+#[derive(Debug, Default, Resource)]
+pub struct ServerLobby {
+    pub players: HashMap<u64, Entity>,
 }
 
 #[derive(Resource)]

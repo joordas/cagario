@@ -1,4 +1,4 @@
-use std::{collections::HashMap, net::UdpSocket, time::SystemTime};
+use std::{net::UdpSocket, time::SystemTime};
 
 use bevy::{
     app::AppExit,
@@ -7,13 +7,13 @@ use bevy::{
     window::exit_on_all_closed,
 };
 use bevy_egui::EguiPlugin;
-use bevy_rapier3d::prelude::*;
+use bevy_rapier3d::prelude::{ActiveEvents, *};
 use bevy_renet::{
     renet::{RenetServer, ServerAuthentication, ServerConfig, ServerEvent},
     RenetServerPlugin,
 };
 use cagario::{
-    cells::{spawn_spheres, Cell},
+    cells::{spawn_spheres, Cell, NpcCell},
     physics::{PhysicsBundle, PhysicsPlugin},
     player::{update_player_cell_size, INITIAL_PLAYER_SIZE},
     server_connection_config, ClientChannel, Player, PlayerCommand, PlayerInput, ServerChannel,
@@ -22,12 +22,7 @@ use cagario::{
 
 use bevy_inspector_egui::WorldInspectorPlugin;
 
-#[derive(Debug, Default, Resource)]
-pub struct ServerLobby {
-    pub players: HashMap<u64, Entity>,
-}
-
-const PLAYER_MOVE_SPEED: f32 = 10.0;
+const PLAYER_MOVE_SPEED: f32 = 30.0;
 
 fn new_renet_server() -> RenetServer {
     let server_addr = "127.0.0.1:5000".parse().unwrap();
@@ -53,7 +48,7 @@ fn main() {
     app.add_plugin(RenetServerPlugin::default());
     app.add_plugin(RapierPhysicsPlugin::<NoUserData>::default());
     app.add_plugin(RapierDebugRenderPlugin::default());
-    app.add_plugin(FrameTimeDiagnosticsPlugin::default());
+    // app.add_plugin(FrameTimeDiagnosticsPlugin::default());
     app.add_plugin(LogDiagnosticsPlugin::default());
     app.add_plugin(EguiPlugin);
     app.add_plugin(WorldInspectorPlugin::new());
@@ -109,6 +104,7 @@ fn server_update_system(
     mut server: ResMut<RenetServer>,
     // mut visualizer: ResMut<RenetServerVisualizer<200>>,
     players: Query<(Entity, &Player, &Transform)>,
+    npc_cells: Query<(Entity, &Cell, &Transform), With<NpcCell>>,
 ) {
     for event in server_events.iter() {
         match event {
@@ -127,10 +123,25 @@ fn server_update_system(
                     .unwrap();
                     server.send_message(*id, ServerChannel::ServerMessages, message);
                 }
+
+                // initialize npc cells already spawned
+                for (entity, cell, transform) in npc_cells.iter() {
+                    let translation: [f32; 3] = transform.translation.into();
+                    let message = bincode::serialize(&ServerMessages::SpawnNpcCell {
+                        entity,
+                        size: cell.size,
+                        translation,
+                    })
+                    .unwrap();
+                    server.send_message(*id, ServerChannel::ServerMessages, message);
+                }
+
                 let mut rng = rand::thread_rng();
 
                 let x = rng.gen_range(-FIELD_SIZE / 2.0..FIELD_SIZE / 2.0) as f32;
                 let z = rng.gen_range(-FIELD_SIZE / 2.0..FIELD_SIZE / 2.0) as f32;
+                // let x = rng.gen_range(-50.0 / 2.0..50.0 / 2.0) as f32;
+                // let z = rng.gen_range(-50.0 / 2.0..50.0 / 2.0) as f32;
                 let rand_transform = Transform::from_xyz(x, 0.0, z);
                 // let rand_transform = Transform::from_xyz(0.0, 0.0, 0.0);
                 let player_entity = commands
@@ -150,6 +161,7 @@ fn server_update_system(
                     .insert(Name::new("Player"))
                     .insert(PlayerInput::default())
                     .insert(Velocity::default())
+                    .insert(ActiveEvents::COLLISION_EVENTS)
                     .insert(PhysicsBundle::moving_entity())
                     .insert(Collider::ball(INITIAL_PLAYER_SIZE))
                     .id();

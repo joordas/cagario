@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_rapier3d::prelude::Collider;
+use bevy_rapier3d::prelude::{ActiveEvents, Collider};
 use bevy_renet::renet::RenetServer;
 use rand::*;
 
@@ -66,6 +66,7 @@ pub fn spawn_spheres(
             .insert(Name::new("Cell"))
             .insert(NpcCell)
             .insert(Cell { size })
+            .insert(ActiveEvents::COLLISION_EVENTS)
             .insert(Collider::ball(size))
             .insert(PhysicsBundle::moving_entity())
             .id();

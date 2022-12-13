@@ -4,7 +4,7 @@ use bevy_renet::renet::RenetServer;
 
 use crate::{
     cells::{Cell, NpcCell},
-    Player, ServerChannel, ServerMessages,
+    Player, PlayerInput, ServerChannel, ServerLobby, ServerMessages,
 };
 
 #[derive(Bundle)]
@@ -72,11 +72,62 @@ fn cell_on_removal_system(mut server: ResMut<RenetServer>, removed_cells: Remove
     }
 }
 
+fn player_to_player_collision_detection(
+    mut commands: Commands,
+    mut collision_events: EventReader<CollisionEvent>,
+    mut lobby: ResMut<ServerLobby>,
+    cell_query: Query<Option<&Cell>>,
+    mut player_query: Query<(Entity, &mut Player), With<PlayerInput>>,
+    mut server: ResMut<RenetServer>,
+) {
+    for collision_event in collision_events.iter() {
+        if let CollisionEvent::Started(entity1, entity2, _) = collision_event {
+            if let Ok(Some(cell_1)) = cell_query.get(*entity1) {
+                if let Ok(Some(cell_2)) = cell_query.get(*entity2) {
+                    if cell_1.size > cell_2.size {
+                        for (player_entity, player) in player_query.iter_mut() {
+                            if player_entity == *entity1 {
+                                let new_size = cell_1.size + cell_2.size / 2.0;
+                                let message = ServerMessages::UpdateEntityCell {
+                                    entity: *entity1,
+                                    size: new_size,
+                                };
+                                let message = bincode::serialize(&message).unwrap();
+                                server.broadcast_message(ServerChannel::ServerMessages, message);
+                            } else if player_entity == *entity2 {
+                                let new_size = cell_2.size + cell_1.size / 2.0;
+                                let message = ServerMessages::UpdateEntityCell {
+                                    entity: *entity2,
+                                    size: new_size,
+                                };
+                                let message = bincode::serialize(&message).unwrap();
+                                server.broadcast_message(ServerChannel::ServerMessages, message);
+
+                                if let Some(player_entity) = lobby.players.remove(&player.id) {
+                                    commands.entity(player_entity).despawn();
+                                }
+
+                                let message = bincode::serialize(&ServerMessages::PlayerRemove {
+                                    id: player.id,
+                                })
+                                .unwrap();
+                                server.broadcast_message(ServerChannel::ServerMessages, message);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 pub struct PhysicsPlugin;
 
 impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
         app.add_system(cell_collision_detection);
+        app.add_system(player_to_player_collision_detection);
         app.add_system_to_stage(CoreStage::PostUpdate, cell_on_removal_system);
+        // app.add_system_to_stage(CoreStage::PostUpdate, player_on_removal_system);
     }
 }

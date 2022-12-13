@@ -13,7 +13,7 @@ use simula_camera::orbitcam::*;
 use smooth_bevy_cameras::LookTransformPlugin;
 
 use bevy_rapier3d::{
-    prelude::{Collider, NoUserData, RapierPhysicsPlugin, Velocity},
+    prelude::{ActiveEvents, Collider, NoUserData, RapierPhysicsPlugin, Velocity},
     render::RapierDebugRenderPlugin,
 };
 
@@ -84,7 +84,7 @@ fn main() {
         .add_plugin(OrbitCameraPlugin)
         // .add_plugin(FlyCameraPlugin)
         .add_plugin(WorldInspectorPlugin::new())
-        .add_state(GameState::InGame);
+        .add_state(GameState::MainMenu);
 
     app.add_event::<PlayerCommand>();
     app.register_type::<Cell>();
@@ -142,7 +142,9 @@ fn client_sync_players(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut client: ResMut<RenetClient>,
     mut lobby: ResMut<ClientLobby>,
+    mut game_state: ResMut<State<GameState>>,
     mut network_mapping: ResMut<NetworkMapping>,
+    controlled_player: Query<Entity, &ControlledPlayer>,
 ) {
     let client_id = client.client_id();
     while let Some(message) = client.receive_message(ServerChannel::ServerMessages) {
@@ -174,9 +176,10 @@ fn client_sync_players(
                     .insert(Name::new("Player"))
                     .insert(PlayerInput::default())
                     .insert(Velocity::default())
+                    .insert(ActiveEvents::COLLISION_EVENTS)
                     .insert(Collider::ball(INITIAL_PLAYER_SIZE));
 
-                print!("client id: {}, id {} ", client_id, id);
+                println!("client id: {}, id {} ", client_id, id);
                 if client_id == id {
                     client_entity.insert(ControlledPlayer);
                 }
@@ -197,6 +200,12 @@ fn client_sync_players(
                 {
                     commands.entity(client_entity).despawn();
                     network_mapping.0.remove(&server_entity);
+
+                    if let Ok(current_player_id) = controlled_player.get_single() {
+                        if client_entity == current_player_id {
+                            game_state.set(GameState::MainMenu).unwrap();
+                        }
+                    }
                 }
             }
             ServerMessages::SpawnNpcCell {
@@ -219,6 +228,7 @@ fn client_sync_players(
                     .insert(Cell { size })
                     .insert(Name::new("NPC"))
                     .insert(Collider::ball(size))
+                    .insert(ActiveEvents::COLLISION_EVENTS)
                     .insert(PhysicsBundle::moving_entity())
                     .insert(NpcCell);
                 network_mapping.0.insert(entity, npc_entity.id());
