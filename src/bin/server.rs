@@ -163,7 +163,7 @@ fn server_update_system(
                     .insert(Velocity::default())
                     .insert(ActiveEvents::COLLISION_EVENTS)
                     .insert(PhysicsBundle::moving_entity())
-                    .insert(Collider::ball(INITIAL_PLAYER_SIZE))
+                    .insert(Collider::ball(INITIAL_PLAYER_SIZE) / 2.0)
                     .id();
 
                 lobby.players.insert(*id, player_entity);

@@ -177,7 +177,7 @@ fn client_sync_players(
                     .insert(PlayerInput::default())
                     .insert(Velocity::default())
                     .insert(ActiveEvents::COLLISION_EVENTS)
-                    .insert(Collider::ball(INITIAL_PLAYER_SIZE));
+                    .insert(Collider::ball(INITIAL_PLAYER_SIZE) / 2.0);
 
                 println!("client id: {}, id {} ", client_id, id);
                 if client_id == id {
@@ -227,7 +227,7 @@ fn client_sync_players(
                 npc_entity
                     .insert(Cell { size })
                     .insert(Name::new("NPC"))
-                    .insert(Collider::ball(size))
+                    .insert(Collider::ball(size / 2.0))
                     .insert(ActiveEvents::COLLISION_EVENTS)
                     .insert(PhysicsBundle::moving_entity())
                     .insert(NpcCell);

@@ -67,7 +67,7 @@ pub fn spawn_spheres(
             .insert(NpcCell)
             .insert(Cell { size })
             .insert(ActiveEvents::COLLISION_EVENTS)
-            .insert(Collider::ball(size))
+            .insert(Collider::ball(size / 2.0))
             .insert(PhysicsBundle::moving_entity())
             .id();
 
