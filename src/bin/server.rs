@@ -40,7 +40,7 @@ use smooth_bevy_cameras::LookTransformPlugin;
 
 fn main() {
     let mut app = App::new();
-    app.add_plugins(DefaultPlugins);
+
     app.add_plugins(DefaultPlugins.set(WindowPlugin {
         window: WindowDescriptor {
             width: WINDOW_WIDTH,
