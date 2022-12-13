@@ -25,6 +25,9 @@ pub const FIELD_SIZE: f32 = 900.0;
 pub const PRIVATE_KEY: &[u8; NETCODE_KEY_BYTES] = b"an example veas very secret key."; // 32-bytes
 pub const PROTOCOL_ID: u64 = 7;
 
+pub const WINDOW_HEIGHT: f32 = 720.0;
+pub const WINDOW_WIDTH: f32 = 1280.0;
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum GameState {
     MainMenu,

@@ -41,7 +41,16 @@ use smooth_bevy_cameras::LookTransformPlugin;
 fn main() {
     let mut app = App::new();
     app.add_plugins(DefaultPlugins);
-
+    app.add_plugins(DefaultPlugins.set(WindowPlugin {
+        window: WindowDescriptor {
+            width: WINDOW_WIDTH,
+            height: WINDOW_HEIGHT,
+            title: "Cagario - Server".to_string(),
+            resizable: false,
+            ..default()
+        },
+        ..default()
+    }));
     app.add_plugin(RenetServerPlugin::default());
     app.add_plugin(RapierPhysicsPlugin::<NoUserData>::default());
     app.add_plugin(RapierDebugRenderPlugin::default());

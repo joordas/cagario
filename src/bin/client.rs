@@ -19,10 +19,6 @@ use bevy_rapier3d::{
 
 use simula_viz::{grid::GridPlugin, lines::LinesPlugin};
 
-pub const HEIGHT: f32 = 720.0;
-pub const WIDTH: f32 = 1280.0;
-
-use cagario::main_menu::*;
 use cagario::physics::*;
 use cagario::player::*;
 use cagario::{
@@ -30,6 +26,7 @@ use cagario::{
     ClientChannel, ControlledPlayer, GameState, NetworkedEntities, PlayerCommand, PlayerInput,
     ServerChannel, ServerMessages, PROTOCOL_ID,
 };
+use cagario::{main_menu::*, WINDOW_HEIGHT, WINDOW_WIDTH};
 
 #[derive(Default, Resource)]
 struct NetworkMapping(HashMap<Entity, Entity>);
@@ -68,8 +65,8 @@ fn main() {
     app.insert_resource(ClearColor(Color::rgb(0.2, 0.2, 0.2)))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             window: WindowDescriptor {
-                width: WIDTH,
-                height: HEIGHT,
+                width: WINDOW_WIDTH,
+                height: WINDOW_HEIGHT,
                 title: "Cagario".to_string(),
                 resizable: false,
                 ..default()
